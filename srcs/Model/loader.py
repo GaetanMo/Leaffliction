@@ -7,17 +7,16 @@ from torchvision import datasets, transforms
 
 def default_transform(img_size: int):
     """Apply the same preprocessing as training/validation to a single PIL image.
-
-    This mirrors the Resize->CenterCrop->ToTensor->Normalize pipeline used in loaders.
+    This mirrors the Resize->CenterCrop->ToTensor->Normalize pipeline used in by resnet (our model).
     """
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
+    mean = (0.485, 0.456, 0.406)  # resnet (our model) requirement
+    std = (0.229, 0.224, 0.225)  # resnet (our model) requirement
     tfm = transforms.Compose(
         [
             transforms.Resize(256),
             transforms.CenterCrop(img_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean, std),
+            transforms.ToTensor(),  # Converts a PIL image (H×W×C, 0..255) to a float32 tensor C×H×W scaled to [0, 1]
+            transforms.Normalize(mean, std),  # Puts inputs on the same scale the pretrained weights were trained on
         ]
     )
     return tfm
@@ -29,29 +28,18 @@ def build_loaders(
     batch_size: int = 32,
     val_split: float = 0.2,
     seed: int = 42,
-    num_workers: int = 0,
 ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
-
-    train_tfms = default_transform(img_size)
-    val_tfms = default_transform(img_size)
-
-    # Load once; we'll clone with different transforms
-    base = datasets.ImageFolder(str(data_dir))
+    tfms = default_transform(img_size)
+    # load
+    base = datasets.ImageFolder(str(data_dir), transform=tfms)  # expects class_name/imagename.jpg layout
     class_to_idx = base.class_to_idx
-
-    # Deterministic split
+    # split
     n_total = len(base)
     n_val = int(n_total * val_split)
     n_train = n_total - n_val
     gen = torch.Generator().manual_seed(seed)
     train_subset, val_subset = random_split(base, [n_train, n_val], generator=gen)
-
-    # Attach transforms per split
-    train_subset.dataset = datasets.ImageFolder(str(data_dir), transform=train_tfms)
-    val_subset.dataset = datasets.ImageFolder(str(data_dir), transform=val_tfms)
-
-    train_loader = DataLoader(
-        train_subset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True
-    )
-    val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+    # created DataLoader
+    train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True, pin_memory=True)
+    val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False, pin_memory=True)
     return train_loader, val_loader, class_to_idx
