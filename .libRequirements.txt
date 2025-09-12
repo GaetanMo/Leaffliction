@@ -1,0 +1,6 @@
+albumentations
+Pillow
+matplotlib
+torch
+torchvision
+numpy
