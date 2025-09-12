@@ -1,0 +1,5 @@
+# Minimal requirements for training/prediction
+torch
+torchvision
+numpy
+pillow

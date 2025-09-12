@@ -1,1 +1,4 @@
 leaves
+__pycache__
+venv
+Model/checkpoints
