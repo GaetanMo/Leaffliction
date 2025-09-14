@@ -1,87 +1,76 @@
-from PIL import Image
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import argparse
+import sys, os
 from pathlib import Path
-import albumentations
-import numpy as np
-import os
+import subprocess
 
 
-def is_valid(path):
-    path = Path(path)
-    if not path.exists():
-        print("Path does not exists.")
-        return 0
-    try:
-        with Image.open(path) as img:
-            if img.format == "JPEG":
-                return 1
-            else:
-                print("Invalid format.")
-                return 0
-    except Exception as e:
-        print("File is not an image.")
-        return 0
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../Distribution")))
 
-def transform(path, i):
-    img = np.array(Image.open(path))
-    transforms = [
-        albumentations.Rotate(limit=45, p=1),
-        albumentations.Blur(blur_limit=7, p=1),
-        albumentations.RandomBrightnessContrast(brightness_limit=0, contrast_limit=0.5, p=1),
-        albumentations.RandomCrop(width=200, height=200, p=1),
-        albumentations.RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0, p=1),
-        albumentations.Affine(shear=20, p=1)
-    ]
-    aug = albumentations.Compose([transforms[i]])
-    augmented = aug(image=img)
-    return augmented['image']
+from Distribution import get_data
 
-def save(imgs, dir, original_path):
-    if not os.path.isdir(dir):
-        print(f"'{dir}' is not a directory.")
-        exit(1)
-    if not os.access(dir, os.W_OK):
-        print(f"Can't write in '{dir}'.")
-        exit(1)
-    original_name = os.path.splitext(os.path.basename(original_path))[0]
-    transformations = [
-        "Original",
-        "Rotate",
-        "Blur",
-        "Contrast",
-        "Crop",
-        "Illumination",
-        "Affine"
-    ]
-    for i, img in enumerate(imgs):
-        if i == 0:
-            continue
-        path = os.path.join(dir, f"{original_name}_{transformations[i]}.JPG")
-        img_pil = Image.fromarray(img)
-        img_pil.save(path)
-    print(f"Images succesfully saved in {dir}")
+
+def equilibrate_data(data, path):
+	max_value = max(data.values())
+	values = list(data.values())
+	paths = list(data.keys())
+	base_dir = os.path.dirname(os.path.abspath(__file__))
+	transformation_script = os.path.join(base_dir, "Transformation.py")
+	for i in range(4, len(values)):
+		if values[i] == max_value:
+			continue
+		new_path = os.path.join(path, paths[i])
+		save_dir = os.path.abspath(new_path)
+		imgs = os.listdir(new_path)
+		img = 0
+		while (values[i] != max_value):
+			if img == len(imgs):
+				break
+			img_path = os.path.join(new_path, imgs[img])
+			if max_value - values[i] >= 6:
+				cmd = [
+					"python3", transformation_script,
+					img_path,
+					"--display", "off",
+					"-s", save_dir
+				]
+				# print(cmd)
+				result = subprocess.run(cmd, capture_output=True, text=True)
+				print("stdout:", result.stdout)
+				# print("stderr:", result.stderr)
+			else:
+				cmd = [
+					"python3", transformation_script,
+					img_path,
+					"--display", "off",
+					"-s", save_dir,
+					"-n", str(max_value - values[i])
+				]
+				result = subprocess.run(cmd, capture_output=True, text=True)
+				print("stdout:", result.stdout)
+				# Appel avec -n "max_value - values[i]"
+			values = list(get_data(path).values())
+			if values[i] == max_value:
+				break
+			print(f"Number: {values[i]} | Goal: {max_value}")
+			img += 1
+			if img == len(imgs):
+				relaunch = True
+				break
+	if relaunch:
+		equilibrate_data(get_data(path), path)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("path", help="Chemin du fichier à traiter")
-    parser.add_argument("-d", "--display", choices=["on", "off"], default="on", help="Display image transformations (on/off, default: on)")
-    parser.add_argument("-s", "--save", metavar="directory", help="Save image transformations in the directory.")
-    args = parser.parse_args()
-    if not is_valid(args.path):
+    if len(sys.argv) != 2:
+        print("Path folder is missing.")
         exit(1)
-    img_original = np.array(Image.open(args.path))
-    images = [img_original] + [transform(args.path, i) for i in range(6)]
-    save(images, args.save, args.path)
-    if args.display == "on":
-        fig, axes = plt.subplots(1, 7, figsize=(18, 4))
-        for ax, img in zip(axes, images):
-            ax.imshow(img)
-            ax.axis("off")
-        plt.tight_layout()
-        plt.show()
-
+    pathname = Path(sys.argv[1])
+    data = get_data(pathname)
+    equilibrate_data(data, pathname)
 
 if __name__ == "__main__":
     main()
+    
+# Recuperation des stats ok, maintenant, appeller 
+# Transformation sur chaque image de tous les dossier
+# minoritaires pour equilibrer avec le plus gros, puis
+# supprimer quand le plus gros est depasse, supprimmer
+# les quelques images en trop
