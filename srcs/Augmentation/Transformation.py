@@ -38,7 +38,7 @@ def transform(path, i):
     augmented = aug(image=img)
     return augmented['image']
 
-def save(imgs, dir, original_path):
+def save(imgs, dir, original_path, skip_first=True):
     if not os.path.isdir(dir):
         print(f"'{dir}' is not a directory.")
         exit(1)
@@ -56,7 +56,7 @@ def save(imgs, dir, original_path):
         "Affine"
     ]
     for i, img in enumerate(imgs):
-        if i == 0:
+        if i == 0 and skip_first:
             continue
         path = os.path.join(dir, f"{original_name}_{transformations[i]}.JPG")
         img_pil = Image.fromarray(img)

@@ -1,6 +1,7 @@
 import sys, os
 from pathlib import Path
 import subprocess
+from Transformation import transform, save
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../Distribution")))
@@ -14,7 +15,8 @@ def equilibrate_data(data, path):
 	paths = list(data.keys())
 	base_dir = os.path.dirname(os.path.abspath(__file__))
 	transformation_script = os.path.join(base_dir, "Transformation.py")
-	for i in range(4, len(values)):
+	relaunch = False
+	for i in range(len(values)):
 		if values[i] == max_value:
 			continue
 		new_path = os.path.join(path, paths[i])
@@ -25,28 +27,29 @@ def equilibrate_data(data, path):
 			if img == len(imgs):
 				break
 			img_path = os.path.join(new_path, imgs[img])
+			imgs_transformed = []
 			if max_value - values[i] >= 6:
-				cmd = [
-					"python3", transformation_script,
-					img_path,
-					"--display", "off",
-					"-s", save_dir
-				]
-				# print(cmd)
-				result = subprocess.run(cmd, capture_output=True, text=True)
-				print("stdout:", result.stdout)
-				# print("stderr:", result.stderr)
+				imgs_transformed = [transform(img_path, j) for j in range(6)]
+    			# cmd = [
+				# 	"python3", transformation_script,
+				# 	img_path,
+				# 	"--display", "off",
+				# 	"-s", save_dir
+				# ]
+				# result = subprocess.run(cmd, capture_output=True, text=True)
 			else:
-				cmd = [
-					"python3", transformation_script,
-					img_path,
-					"--display", "off",
-					"-s", save_dir,
-					"-n", str(max_value - values[i])
-				]
-				result = subprocess.run(cmd, capture_output=True, text=True)
-				print("stdout:", result.stdout)
+				imgs_transformed = [transform(img_path, j) for j in range(max_value - values[i])]
+				# cmd = [
+				# 	"python3", transformation_script,
+				# 	img_path,
+				# 	"--display", "off",
+				# 	"-s", save_dir,
+				# 	"-n", str(max_value - values[i])
+				# ]
+				# result = subprocess.run(cmd, capture_output=True, text=True)
+				# print("stdout:", result.stdout)
 				# Appel avec -n "max_value - values[i]"
+			save(imgs_transformed, save_dir, img_path, False)
 			values = list(get_data(path).values())
 			if values[i] == max_value:
 				break
