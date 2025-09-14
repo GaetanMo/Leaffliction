@@ -68,9 +68,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-# Recuperation des stats ok, maintenant, appeller 
-# Transformation sur chaque image de tous les dossier
-# minoritaires pour equilibrer avec le plus gros, puis
-# supprimer quand le plus gros est depasse, supprimmer
-# les quelques images en trop
