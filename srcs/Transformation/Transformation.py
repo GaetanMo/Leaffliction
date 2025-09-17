@@ -94,6 +94,7 @@ def transformations(img, mask_option=False):
     ]
 
 def process_image(path, dst_dir=None, mask_option=False):
+    original_path = path
     img, path, filename = pcv.readimage(path)
     if img is None:
         print(f"Erreur : impossible de lire {path}")
@@ -105,9 +106,23 @@ def process_image(path, dst_dir=None, mask_option=False):
         if name == "landmarks_coords":
             continue
 
+        os.makedirs(dst_dir, exist_ok=True)
         if dst_dir:
-            os.makedirs(dst_dir, exist_ok=True)
-            base_name = os.path.splitext(os.path.basename(path))[0]
+            base_name = os.path.splitext(os.path.basename(original_path))[0]
+            if name == "color_histogram_data":
+                plt.figure(figsize=(8, 4))
+                colors = {'r': 'red', 'g': 'green', 'b': 'blue'}
+                for col, hist in t_img.items():
+                    plt.plot(hist, label=col.upper(), color=colors[col])
+                plt.xlabel("Pixels intensity")
+                plt.ylabel("Proportion of pixels (%)")
+                plt.title("Color histogram")
+                plt.legend()
+                plt.grid(True)
+                save_path = os.path.join(dst_dir, f"{base_name}_{name}.png")
+                plt.savefig(save_path)
+                plt.close()
+                continue
             save_path = os.path.join(dst_dir, f"{base_name}_{name}.JPG")
             cv2.imwrite(save_path, t_img)
         else:
