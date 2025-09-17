@@ -6,51 +6,123 @@ import argparse
 import matplotlib.pyplot as plt
 
 def transformations(img, mask_option=False):
-    # Get gaussian blur image
+    # Get gaussian blur
     blur = cv2.GaussianBlur(img, (7, 7), 0)
 
-    # Get mask
-    # Pixels supérieurs à 100 → objet, pixels inférieurs → fond
+    # Binary mask
     mask = pcv.threshold.binary(img, threshold=100, object_type='light')
 
     # Get ROI
     height, width = img.shape[:2]
     x, y, w, h = 0, 0, width, height
     rect_roi = pcv.roi.rectangle(img, x, y, w, h)
+
     a_gray = pcv.rgb2gray_lab(rgb_img=img, channel="a")
     bin_mask = pcv.threshold.otsu(gray_img=a_gray, object_type="dark")
     cleaned_mask = pcv.fill(bin_img=bin_mask, size=50)
-    filtered_mask  = pcv.roi.filter(mask=cleaned_mask, roi=rect_roi, roi_type='partial')
+    filtered_mask = pcv.roi.filter(mask=cleaned_mask, roi=rect_roi, roi_type='partial')
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray_bgr = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
     green_layer = np.zeros_like(img)
     green_layer[:, :, 1] = filtered_mask
     output = gray_bgr.copy()
     output[filtered_mask > 0] = green_layer[filtered_mask > 0]
-    cv2.rectangle(output, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=3)  # BGR -> bleu
+    cv2.rectangle(output, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=3)
 
-    # Get object analysis
     shape_img = pcv.analyze.size(img=img, labeled_mask=filtered_mask)
 
-    # PSEUDOLANDMARKS A FAIRE
+    # Get pseudolandmarks
+    landmarks_img = img.copy()
+    landmarks_points = []
 
-    return [("blur", blur), ("mask", mask), ("roi", output), ("shape_analysis", shape_img)]
+    contours, _ = cv2.findContours(filtered_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if contours:
+        cnt = max(contours, key=cv2.contourArea)
+
+        M = cv2.moments(cnt)
+        if M["m00"] != 0:
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+            landmarks_points.append(("centre", (cx, cy)))
+            cv2.circle(landmarks_img, (cx, cy), 6, (0, 0, 255), -1)
+
+        top    = tuple(cnt[cnt[:, :, 1].argmin()][0])
+        bottom = tuple(cnt[cnt[:, :, 1].argmax()][0])
+        left   = tuple(cnt[cnt[:, :, 0].argmin()][0])
+        right  = tuple(cnt[cnt[:, :, 0].argmax()][0])
+        for name, pt in [("haut", top), ("bas", bottom), ("gauche", left), ("droite", right)]:
+            landmarks_points.append((name, pt))
+            cv2.circle(landmarks_img, pt, 6, (255, 0, 0), -1)
+
+        hull = cv2.convexHull(cnt, returnPoints=True)
+        step = max(1, len(hull)//60)
+        for i in range(0, len(hull), step):
+            p = tuple(hull[i][0])
+            landmarks_points.append((f"hull_{i}", p))
+            cv2.circle(landmarks_img, p, 4, (0, 255, 255), -1)
+
+    # Get color histogram
+    hist_h, hist_w = 300, 512
+    hist_img = np.ones((hist_h, hist_w, 3), dtype=np.uint8) * 255
+    img_rgb = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2RGB)
+    colors = ('r', 'g', 'b')
+    hist_data = {}
+
+    for i, col in enumerate(colors):
+        hist = cv2.calcHist([img_rgb], [i], None, [256], [0, 256])
+        total_pixels = img_rgb.shape[0] * img_rgb.shape[1]
+        hist = hist / total_pixels
+        hist_data[col] = hist
+        cv2.normalize(hist, hist, 0, hist_h, cv2.NORM_MINMAX)
+        for j in range(1, 256):
+            cv2.line(hist_img,
+                     (int((j-1)*hist_w/256), hist_h - int(hist[j-1].item())),
+                     (int(j*hist_w/256), hist_h - int(hist[j].item())),
+                     (255, 0, 0) if col == 'r' else (0, 255, 0) if col == 'g' else (0, 0, 255),
+                     2)
+
+    return [
+        ("original", img),
+        ("blur", blur),
+        ("mask", mask),
+        ("roi", output),
+        ("shape_analysis", shape_img),
+        ("pseudo_landmarks", landmarks_img),
+        ("landmarks_coords", landmarks_points),
+        ("color_histogram_data", hist_data)
+    ]
 
 def process_image(path, dst_dir=None, mask_option=False):
     img, path, filename = pcv.readimage(path)
     if img is None:
-        print(f"Error : impossible to read {path}")
+        print(f"Erreur : impossible de lire {path}")
         return
 
     transformed = transformations(img, mask_option)
 
     for name, t_img in transformed:
+        if name == "landmarks_coords":
+            continue
+
         if dst_dir:
             os.makedirs(dst_dir, exist_ok=True)
             base_name = os.path.splitext(os.path.basename(path))[0]
             save_path = os.path.join(dst_dir, f"{base_name}_{name}.JPG")
             cv2.imwrite(save_path, t_img)
         else:
+            if name == "color_histogram_data":
+                plt.figure(figsize=(8, 4))
+                colors = {'r': 'red', 'g': 'green', 'b': 'blue'}
+                for col, hist in t_img.items():
+                    plt.plot(hist, label=col.upper(), color=colors[col])
+                plt.xlabel("Pixels intensity")
+                plt.ylabel("Proportion of pixels (%)")
+                plt.title("Color histogram")
+                plt.legend()
+                plt.grid(True)
+                plt.show()
+            plt.figure(figsize=(8, 4))
             plt.imshow(cv2.cvtColor(t_img, cv2.COLOR_BGR2RGB))
             plt.title(name)
             plt.axis('off')
