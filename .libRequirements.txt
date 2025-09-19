@@ -5,3 +5,4 @@ torch
 torchvision
 numpy
 plantcv
+flake8

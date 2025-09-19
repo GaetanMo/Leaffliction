@@ -1,7 +1,7 @@
 import sys
 import logging
 from pathlib import Path
-from utils import print_distribution
+from .utils import print_distribution
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

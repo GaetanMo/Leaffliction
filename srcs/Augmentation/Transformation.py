@@ -1,6 +1,5 @@
 from PIL import Image
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import argparse
 from pathlib import Path
 import albumentations
@@ -20,23 +19,33 @@ def is_valid(path):
             else:
                 print("Invalid format.")
                 return 0
-    except Exception as e:
+    except Exception:
         print("File is not an image.")
         return 0
+
 
 def transform(path, i):
     img = np.array(Image.open(path))
     transforms = [
         albumentations.Rotate(limit=45, p=1),
         albumentations.Blur(blur_limit=7, p=1),
-        albumentations.RandomBrightnessContrast(brightness_limit=0, contrast_limit=0.5, p=1),
+        albumentations.RandomBrightnessContrast(
+            brightness_limit=0,
+            contrast_limit=0.5,
+            p=1
+            ),
         albumentations.RandomCrop(width=200, height=200, p=1),
-        albumentations.RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0, p=1),
+        albumentations.RandomBrightnessContrast(
+            brightness_limit=0.5,
+            contrast_limit=0,
+            p=1
+            ),
         albumentations.Affine(shear=20, p=1)
     ]
     aug = albumentations.Compose([transforms[i]])
     augmented = aug(image=img)
     return augmented['image']
+
 
 def save(imgs, dir, original_path, skip_first=True):
     if not os.path.isdir(dir):
@@ -63,6 +72,7 @@ def save(imgs, dir, original_path, skip_first=True):
         img_pil.save(path)
     print(f"Images succesfully saved in {os.path.abspath(dir)}")
 
+
 def check_args_number(n):
     if n > 6:
         print("Transformation number can't exceed 6.")
@@ -71,12 +81,31 @@ def check_args_number(n):
         print("Transformation number can't be negative or equal to 0.")
         exit(1)
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="Chemin du fichier à traiter")
-    parser.add_argument("-d", "--display", choices=["on", "off"], default="on", help="Display image transformations (on/off, default: on)")
-    parser.add_argument("-s", "--save", metavar="directory", help="Save image transformations in the directory.")
-    parser.add_argument("-n", "--number", default="6", type=int, metavar="number of transformation", help="Set the number of transformation (max 7).")
+    parser.add_argument(
+        "-d",
+        "--display",
+        choices=["on", "off"],
+        default="on",
+        help="Display image transformations (on/off, default: on)"
+        )
+    parser.add_argument(
+        "-s",
+        "--save",
+        metavar="directory",
+        help="Save image transformations in the directory."
+        )
+    parser.add_argument(
+        "-n",
+        "--number",
+        default="6",
+        type=int,
+        metavar="number of transformation",
+        help="Set the number of transformation (max 7)."
+        )
     args = parser.parse_args()
     if not is_valid(args.path):
         exit(1)
