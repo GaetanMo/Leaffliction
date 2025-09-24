@@ -18,4 +18,10 @@ fclean:
 
 re: fclean all
 
+distribution:
+	python -m srcs.Distribution.Distribution data/images
+
+augmentation:
+	python -m srcs.Augmentation.Augmentation data/images
+
 .PHONY: all fclean re .venv
