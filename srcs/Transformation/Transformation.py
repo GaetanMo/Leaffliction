@@ -106,8 +106,8 @@ def process_image(path, dst_dir=None, mask_option=False):
         if name == "landmarks_coords":
             continue
 
-        os.makedirs(dst_dir, exist_ok=True)
-        if dst_dir:
+        if dst_dir:                                    # <-- vérifie d'abord
+            os.makedirs(dst_dir, exist_ok=True)        # <-- crée le dossier uniquement si demandé
             base_name = os.path.splitext(os.path.basename(original_path))[0]
             if name == "color_histogram_data":
                 plt.figure(figsize=(8, 4))
@@ -125,7 +125,9 @@ def process_image(path, dst_dir=None, mask_option=False):
                 continue
             save_path = os.path.join(dst_dir, f"{base_name}_{name}.JPG")
             cv2.imwrite(save_path, t_img)
+
         else:
+            # mode affichage interactif
             if name == "color_histogram_data":
                 plt.figure(figsize=(8, 4))
                 colors = {'r': 'red', 'g': 'green', 'b': 'blue'}
@@ -137,11 +139,13 @@ def process_image(path, dst_dir=None, mask_option=False):
                 plt.legend()
                 plt.grid(True)
                 plt.show()
-            plt.figure(figsize=(8, 4))
-            plt.imshow(cv2.cvtColor(t_img, cv2.COLOR_BGR2RGB))
-            plt.title(name)
-            plt.axis('off')
-            plt.show()
+            else:
+                plt.figure(figsize=(8, 4))
+                plt.imshow(cv2.cvtColor(t_img, cv2.COLOR_BGR2RGB))
+                plt.title(name)
+                plt.axis('off')
+                plt.show()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Leaf image transformations")
