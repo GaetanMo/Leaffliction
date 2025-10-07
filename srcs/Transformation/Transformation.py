@@ -4,6 +4,7 @@ import numpy as np
 import os
 import argparse
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 def transformations(img, mask_option=False):
     # Get gaussian blur
@@ -159,9 +160,19 @@ def main():
         if args.dst is None:
             print("Error: -dst is required when -src is a directory.")
             return
-        for filename in os.listdir(args.src):
-            if filename.endswith((".JPG")):
-                process_image(os.path.join(args.src, filename), dst_dir=args.dst, mask_option=args.mask)
+        pathname = Path(args.src)
+
+        for subdir in pathname.iterdir():
+            if subdir.suffix.lower() == ".jpg":
+                process_image(subdir, dst_dir=args.dst, mask_option=args.mask)
+            if subdir.is_dir():
+                for jpg_path in subdir.rglob("*"):
+                    if jpg_path.suffix.lower() == ".jpg":
+                        relative_path = jpg_path.parent.relative_to(pathname)
+                        dst_subdir = Path(args.dst) / relative_path
+                        dst_subdir.mkdir(parents=True, exist_ok=True)
+
+                        process_image(str(jpg_path), dst_dir=str(dst_subdir), mask_option=args.mask)
     else:
         # File
         process_image(args.src, dst_dir=args.dst, mask_option=args.mask)
