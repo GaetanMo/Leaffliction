@@ -24,4 +24,7 @@ distribution:
 augmentation:
 	python -m srcs.Augmentation.Augmentation data/images
 
+transformation:
+	python  srcs/Transformation/Transformation.py -src data/images -dst data/images_transformed
+
 .PHONY: all fclean re .venv

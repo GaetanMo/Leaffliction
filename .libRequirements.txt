@@ -3,6 +3,6 @@ Pillow
 matplotlib
 torch
 torchvision
-numpy
+numpy==1.26.0
 plantcv
 flake8
