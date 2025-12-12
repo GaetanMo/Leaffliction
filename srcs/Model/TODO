@@ -1,0 +1,4 @@
+In train.py : add an option to select the type of augmentation you want to predict with (with args)  
+In predict.py : add an option to select the type of augmentation you want to predict with (with args)  
+
+Add a result displayer on the same format as the subject. Original img, augmented img, result.
