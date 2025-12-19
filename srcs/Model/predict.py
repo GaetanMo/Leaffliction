@@ -75,29 +75,51 @@ def show_prediction_window(pred_img_path: Path, orig_img_path: Path, pred_class:
 
 def get_args():
     parser = argparse.ArgumentParser(description="Predict a class for a single image")
-    parser.add_argument("img_path", type=str, help="Path to the transformed image used for prediction")
-    parser.add_argument("orig_path", type=str, help="Path to the original image (for display only)")
+    parser.add_argument(
+        "img_stem",
+        type=str,
+        help="Base path without tail or extension (e.g., data/.../image (2))",
+    )
+    parser.add_argument(
+        "--name_tail",
+        type=str,
+        default="_original",
+        help="Tail appended to the base path for the transformed image (e.g., _mask, _blur)",
+    )
+    parser.add_argument(
+        "--orig_tail",
+        type=str,
+        default="_original",
+        help="Tail appended to the base path for the original image (defaults to _original)",
+    )
+    parser.add_argument(
+        "--ext",
+        type=str,
+        default=".JPG",
+        help="Image extension (with or without leading dot). Defaults to .JPG",
+    )
     parser.add_argument("--checkpoint", type=str, default="Model/checkpoints/best.pt")
     parser.add_argument("--img_size", type=int, default=224)
-    parser.add_argument("--show", action="store_true", help="Display the image with the predicted label overlay")
     args = parser.parse_args()
     return args
 
 
 def main():
     args = get_args()
+    ext = args.ext if args.ext.startswith(".") else f".{args.ext}"
+    base_path = Path(args.img_stem)
+    pred_path = Path(f"{base_path}{args.name_tail}{ext}")
+    orig_img_path = Path(f"{base_path}{args.orig_tail}{ext}")
     checkpoint = Path(args.checkpoint)
-    img_path = Path(args.img_path)
-    orig_img_path = Path(args.orig_path)
     if not checkpoint.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint}")
-    if not img_path.exists():
-        raise FileNotFoundError(f"Image not found: {img_path}")
+    if not pred_path.exists():
+        raise FileNotFoundError(f"Image not found: {pred_path}")
     if not orig_img_path.exists():
         raise FileNotFoundError(f"Original image not found: {orig_img_path}")
     exts = {".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"}
-    if not img_path.is_file() or img_path.suffix not in exts:
-        raise ValueError(f"File {img_path} is not a supported image type")
+    if not pred_path.is_file() or pred_path.suffix not in exts:
+        raise ValueError(f"File {pred_path} is not a supported image type")
     if not orig_img_path.is_file() or orig_img_path.suffix not in exts:
         raise ValueError(f"File {orig_img_path} is not a supported image type")
 
@@ -109,7 +131,7 @@ def main():
     model.load_state_dict(checkpoint_loaded.get("model_state"), strict=False)
     model.eval()
 
-    x = load_image(img_path, args.img_size)
+    x = load_image(pred_path, args.img_size)
     with torch.no_grad():
         logits = model(x)
         probs = F.softmax(logits, dim=1)[0]
@@ -118,8 +140,7 @@ def main():
     idx_to_class = {v: k for k, v in class_to_idx.items()}
     pred_class = idx_to_class[int(pred_idx)]
     print(f"Prediction: {pred_class} (p={float(conf):.4f})")
-    if args.show:
-        show_prediction_window(img_path, orig_img_path, pred_class, float(conf))
+    show_prediction_window(pred_path, orig_img_path, pred_class, float(conf))
 
 
 if __name__ == "__main__":
