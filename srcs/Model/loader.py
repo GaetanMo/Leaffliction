@@ -3,6 +3,7 @@ from typing import Dict, Tuple
 import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
+from torchvision.datasets.folder import IMG_EXTENSIONS, has_file_allowed_extension
 
 
 def default_transform(img_size: int):
@@ -23,15 +24,27 @@ def default_transform(img_size: int):
 
 
 def build_loaders(
-    data_dir: str | Path = "leaves/images",
+    data_dir: str | Path = "data/images_transformed",
     img_size: int = 224,
     batch_size: int = 32,
     val_split: float = 0.2,
     seed: int = 42,
+    name_tail: str | None = "_original",
 ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
     tfms = default_transform(img_size)
+    tail = name_tail or None  # allow empty string to mean "no filtering"
+
+    def is_valid_file(path: str) -> bool:
+        if not has_file_allowed_extension(path, IMG_EXTENSIONS):
+            return False
+        if tail is None:
+            return True
+        return Path(path).stem.endswith(tail)
+
     # load
-    base = datasets.ImageFolder(str(data_dir), transform=tfms)  # expects class_name/imagename.jpg layout
+    base = datasets.ImageFolder(
+        str(data_dir), transform=tfms, is_valid_file=is_valid_file
+    )  # expects class_name/imagename.jpg layout
     class_to_idx = base.class_to_idx
     # split
     n_total = len(base)

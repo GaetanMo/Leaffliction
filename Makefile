@@ -27,4 +27,10 @@ augmentation:
 transformation:
 	python  srcs/Transformation/Transformation.py -src data/images -dst data/images_transformed
 
+train:
+	python -m srcs.Model.train --name_tail _original
+
+predict:
+	python -m srcs.Model.predict "data/images_transformed/Apple_Black_rot/image (1)_original.JPG"
+
 .PHONY: all fclean re .venv

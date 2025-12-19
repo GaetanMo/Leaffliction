@@ -63,25 +63,33 @@ def train(train_loader, val_loader, class_to_idx, lr, epochs, out):
 
 def get_args():
     parser = argparse.ArgumentParser(description="Train a leaf classifier with an 80/20 split")
-    parser.add_argument("--data_dir", type=str, default="leaves/images")
+    parser.add_argument("--data_dir", type=str, default="data/images_transformed")
     parser.add_argument("--img_size", type=int, default=224)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out", type=str, default="Model/checkpoints/best.pt")
+    parser.add_argument(
+        "--name_tail",
+        type=str,
+        default="_original",
+        help="Only keep files whose basename ends with this tail; pass empty string to keep all",
+    )
     args = parser.parse_args()
     return args
 
 
 def main():
     args = get_args()
+    name_tail = args.name_tail or None
     train_loader, val_loader, class_to_idx = build_loaders(
         args.data_dir,
         args.img_size,
         args.batch_size,
         0.2,
         args.seed,
+        name_tail,
     )
     train(train_loader, val_loader, class_to_idx, args.lr, args.epochs, args.out)
 
