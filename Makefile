@@ -31,6 +31,6 @@ train:
 	python -m srcs.Model.train --name_tail _original
 
 predict:
-	python -m srcs.Model.predict "data/images_transformed/Apple_Black_rot/image (1)_original.JPG"
+	python -m srcs.Model.predict "data/images_transformed/Apple_Black_rot/image (2)_original.JPG" "data/images_transformed/Apple_Black_rot/image (2)_original.JPG" --show
 
 .PHONY: all fclean re .venv
