@@ -7,7 +7,6 @@ from ..Distribution.Distribution import get_data
 from PIL import Image
 
 
-
 def equilibrate_data(data, path):
     best_v = max(data.values())
     values = list(data.values())

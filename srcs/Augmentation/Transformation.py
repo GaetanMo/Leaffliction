@@ -107,14 +107,20 @@ def main():
         metavar="number of transformation",
         help="Set the number of transformation (max 7)."
         )
+
     args = parser.parse_args()
+
     if not is_valid(args.path):
         exit(1)
+
     check_args_number(int(args.number))
     n = int(args.number)
     img_original = np.array(Image.open(args.path))
     images = [img_original] + [transform(args.path, i) for i in range(n)]
-    save(images, args.save, args.path, False)
+
+    if args.save:
+        save(images, args.save, args.path, False)
+
     if args.display == "on":
         fig, axes = plt.subplots(1, n + 1, figsize=(18, 4))
         for ax, img in zip(axes, images):
