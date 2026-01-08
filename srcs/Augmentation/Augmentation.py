@@ -1,8 +1,11 @@
 import sys
 import os
+import numpy as np
 from pathlib import Path
 from .Transformation import transform, save
 from ..Distribution.Distribution import get_data
+from PIL import Image
+
 
 
 def equilibrate_data(data, path):
@@ -21,6 +24,7 @@ def equilibrate_data(data, path):
             if img == len(imgs):
                 break
             img_path = os.path.join(new_path, imgs[img])
+            img_original = np.array(Image.open(img_path))
             t_imgs = []
             if best_v - values[i] >= 6:
                 t_imgs = [transform(img_path, j) for j in range(6)]
@@ -28,7 +32,8 @@ def equilibrate_data(data, path):
                 t_imgs = [
                     transform(img_path, j) for j in range(best_v - values[i])
                     ]
-            save(t_imgs, save_dir, img_path, False)
+            t_imgs = [img_original] + t_imgs
+            save(t_imgs, save_dir, img_path, True)
             values = list(get_data(path).values())
             if values[i] == best_v:
                 break

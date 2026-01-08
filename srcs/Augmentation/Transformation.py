@@ -64,6 +64,7 @@ def save(imgs, dir, original_path, skip_first=True):
         "Illumination",
         "Affine"
     ]
+    print(len(imgs))
     for i, img in enumerate(imgs):
         if i == 0 and skip_first:
             continue
@@ -113,7 +114,7 @@ def main():
     n = int(args.number)
     img_original = np.array(Image.open(args.path))
     images = [img_original] + [transform(args.path, i) for i in range(n)]
-    save(images, args.save, args.path)
+    save(images, args.save, args.path, False)
     if args.display == "on":
         fig, axes = plt.subplots(1, n + 1, figsize=(18, 4))
         for ax, img in zip(axes, images):
