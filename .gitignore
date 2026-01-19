@@ -3,3 +3,5 @@ __pycache__
 .venv
 Model/checkpoints
 data
+test_images/
+test_images_transformed/

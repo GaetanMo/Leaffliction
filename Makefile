@@ -33,4 +33,11 @@ train:
 predict:
 	python -m srcs.Model.predict "data/images_transformed/Apple_Black_rot/image (1)" --name_tail "_original"
 
+evalTest:
+	mkdir -p test_images_transformed
+	python -m srcs.Augmentation.Transformation -d off -n 6 -s test_images_transformed ./test_images/Unit_test1/Apple_healthy1.JPG
+	python -m srcs.Augmentation.Transformation -d off -n 6 -s test_images_transformed ./test_images/Unit_test2/Grape_spot.JPG
+	python -m srcs.Model.predict "test_images_transformed/Apple_healthy1" --name_tail "_Original" --orig_tail "_Original"
+	python -m srcs.Model.predict "test_images_transformed/Grape_spot" --name_tail "_Original" --orig_tail "_Original"
+
 .PHONY: all fclean re .venv
