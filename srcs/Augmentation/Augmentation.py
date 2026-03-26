@@ -45,13 +45,30 @@ def equilibrate_data(data, path):
         equilibrate_data(get_data(path), path)
 
 
+def equilibrate_file(img_path: str, dir_path: str):
+
+    if not Path(dir_path).exists():
+        os.makedirs(dir_path)
+
+    save_dir = os.path.abspath(dir_path)
+
+    img_original = np.array(Image.open(img_path))
+
+    t_imgs = [transform(img_path, j) for j in range(6)]
+    t_imgs = [img_original] + t_imgs
+    save(t_imgs, save_dir, img_path, True)
+
+
 def main():
     if len(sys.argv) != 2:
         print("Path folder is missing.")
         exit(1)
     pathname = Path(sys.argv[1])
-    data = get_data(pathname)
-    equilibrate_data(data, pathname)
+    if pathname.is_file():
+        equilibrate_file(pathname, "data/augmentation")
+    elif pathname.is_dir():
+        data = get_data(pathname)
+        equilibrate_data(data, pathname)
 
 
 if __name__ == "__main__":

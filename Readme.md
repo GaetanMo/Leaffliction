@@ -1,7 +1,17 @@
     make .venv
+
     source .venv/bin/activate
+
     make distribution
+
     make augmentation
+    
+        or python -m srcs.Augmentation.Augmentation [img_path] 
+        (augmentation on a single image)
+
+        or python -m srcs.Augmentation.Transformation -d off -n 6 -s {outdir} {path_to_image} 
+        (use the transformation feature used for the augmentation)
+    
     make transformation
     
     make train  
